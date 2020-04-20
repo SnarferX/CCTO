@@ -1,0 +1,81 @@
+---
+
+  - set_fact:
+       memtotal: "{{ ansible_memtotal_mb }}"
+       ram_size: "{{ ansible_memtotal_mb * 1024 | float | int }}"
+       ram_math: "{{ ram_size |float * 0.9 }}"
+       mem_lock: "{{ ram_math | float | round(1, 'floor') | int}}"
+       oracle_user: oracle
+
+  - name: Add or modify nproc soft limit for the user oracle
+    pam_limits:
+      domain: oracle
+      limit_type: soft
+      limit_item: nproc
+      value: 4096
+
+  - name: Add or modify nproc hard limit for the user oracle
+    pam_limits:
+      domain: oracle
+      limit_type: hard
+      limit_item: nproc
+      value: 16384
+
+  - name: Add or modify nofile soft limit for the user oracle
+    pam_limits:
+      domain: oracle
+      limit_type: soft
+      limit_item: nofile
+      value: 2048
+
+  - name: Add or modify nofile hard limit for the user oracle
+    pam_limits:
+      domain: oracle
+      limit_type: hard
+      limit_item: nofile
+      value: 65536
+
+  - name: Add or modify stack soft limit for the user oracle
+    pam_limits:
+      domain: oracle
+      limit_type: soft
+      limit_item: stack
+      value: 10240
+
+  - name: Add or modify stack hard limit for the user oracle
+    pam_limits:
+      domain: oracle
+      limit_type: hard
+      limit_item: stack
+      value: 32768
+
+  # - debug:
+  #     msg:
+  #   # - "{{ ansible_memtotal_mb }} * {{ 1024 * 1024 * .9 | float }}"
+  #     - "{{ ram_size }}"
+  #     - "{{ mem_lock }}"
+  #     - "{{ ram_math }}"
+
+  # - name: Add or modify memlock hard limit for the user oracle
+  #   pam_limits:
+  #     domain: oracle
+  #     limit_type: soft
+  #     limit_item: memlock
+  #     value: mem_lock
+
+  # - name: Add or modify memlock hard limit for the user oracle
+  #   pam_limits:
+  #     domain: oracle
+  #     limit_type: hard
+  #     limit_item: memlock
+  #     value: mem_lock
+
+  - name: Add oracle user limits
+    lineinfile: dest=/etc/security/limits.conf line='{{ oracle_user }} {{ item.limit }} {{ item.type}} {{ item.value }}'
+    with_items:
+      - { limit: 'soft', type: memlock, value: '{{ mem_lock }}' }
+      - { limit: 'hard', type: memlock, value: '{{ mem_lock }}' }
+
+
+  - debug:
+      msg: this is the kernel   {{ ansible_kernel }}
